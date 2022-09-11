@@ -1,0 +1,29 @@
+{
+  "manifest_version": 3,
+  "name": "Begone, YouTube™ Bot!",
+  "description": "Removes unwanted bot comments found on many YouTube videos",
+  "version": "0.1.0",
+  "permissions": [
+    "storage"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": ["https://www.youtube.com/watch?v=*"],
+      "js": ["h4g98hniwurgb094j.js"]
+    },
+    {
+      "matches": ["https://extensionpay.com/*"],
+      "js": ["ExtPay.js"],
+      "run_at": "document_start"
+    }
+  ], 
+  "action": {
+    "default_icon": "128x128 robot.png"
+  },
+  "icons": {
+    "128": "128x128 robot.png"
+  }
+}
