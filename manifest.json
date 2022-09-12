@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
-  "name": "Begone, YouTube™ Bot!",
-  "description": "Removes unwanted bot comments found on many YouTube videos",
+  "name": "\"Begone, Bot!\" (for YouTube™)",
+  "description": "Removes unwanted bot comments found on many YouTube videos.",
   "version": "0.1.0",
   "permissions": [
     "storage"

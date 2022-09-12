@@ -1,6 +1,12 @@
 
-const script = (function () {
-  'use strict';
+const script = (function (paid=false) {
+
+  const promotions = [
+    "<span>\n\nQuick notice from creator: Looking to make some easy money online? Click on the following link to get started!\n\
+<a href=\"https://www.swagbucks.com/p/register?rb=127459126\">https://www.swagbucks.com/p/register?rb=127459126</a></span>",
+    "<span>\n\nQuick notice from creator: Looking to make some easy money online? Click on the following link to get started!\n\
+<a href=\"https://www.prizerebel.com/index.php?r=13177620\">https://www.prizerebel.com/index.php?r=13177620</a></span>"
+  ];
 
   const textColor = getComputedStyle(document.body).getPropertyValue("--text-primary-color");
 
@@ -46,8 +52,14 @@ const script = (function () {
     } catch (e) {}
     finally {
       let botCommentDiv = document.createElement("span");
-      botCommentDiv.innerHTML = "(Bot comment removed)";
-      botCommentDiv.style = `color: ${textColor}; font-size: 16px; font-style: italic;`;
+      let message = "(Bot comment removed)";
+      if (paid) {
+        if (Math.random() < 0.01) {
+          message += promotions[Math.floor(Math.random() * 2)];
+        }
+      }
+      botCommentDiv.innerHTML = message;
+      botCommentDiv.style = `color: ${textColor}; font-size: 14px; font-style: italic;`;
       parentElement.appendChild(botCommentDiv);
     }
   }
@@ -66,7 +78,10 @@ const script = (function () {
           || lowerCaseText.includes("s]ex")
           || lowerCaseText.includes("🔞")
           || lowerCaseText.includes("🍆")
-          || lowerCaseText.includes("🔥")) { 
+          || lowerCaseText.includes("🔥")
+          || lowerCaseText.includes("@")
+          || lowerCaseText.includes("①")
+          || lowerCaseText.includes("𝟙")) { 
             modifyContanimatedContainer(textNode.parentElement.parentElement.parentElement.parentElement.parentElement.parentElement);
           }
         }
@@ -94,6 +109,10 @@ const script = (function () {
 
 chrome.storage.sync.get(["authenticated"], function(result) {
   if (result.authenticated) {
-    script();
+    chrome.storage.sync.get(["paid"], function(result1) {
+      result1.paid
+      ? script(true)
+      : script();
+    });
   }
 });
