@@ -3,7 +3,7 @@ const script = (function (paid=false) {
   Layouts:
 
   commentArchive: {
-    "COMMENT_DATA": [firstNodeLocation, "x2"], // If commentArchive[comment].length >= 2, add to botArchive
+    "COMMENT_DATA": [firstNodeLocation],
     ...
   }
 
@@ -12,11 +12,10 @@ const script = (function (paid=false) {
     ...
   }
   */
-
   class ListNode {
     constructor(data) {
       this.data = data;
-      this.next = null;                
+      this.next = null;
     }
   }
 
@@ -38,7 +37,7 @@ const script = (function (paid=false) {
 
     addNode(nodeData) {
       /* Automatically kick off any old comments after 100 comments is reached.
-      */ 
+      */
       let newNode = new ListNode(nodeData);
       if (!this.head) {
         this.head = this.tail = newNode;
@@ -61,16 +60,16 @@ const script = (function (paid=false) {
   }
 
   const promotions = [
-    "<span>\n\nQuick notice from creator: Looking to make some easy money online? Click on the following link to get started!\n\
-    <a href=\"https://www.swagbucks.com/p/register?rb=127459126\" target=\"_blank\" rel=\"noopener noreferrer\">https://www.swagbucks.com/p/register?rb=127459126</a></span>",
-    
-    "<span>\n\nQuick notice from creator: Looking to make some easy money online? Click on the following link to get started!\n\
-    <a href=\"https://www.prizerebel.com/index.php?r=13177620\" target=\"_blank\" rel=\"noopener noreferrer\">https://www.prizerebel.com/index.php?r=13177620</a></span>",
-    
-    "<span>\n\nCreator Notice: Looking for more meaning in life? Check this out for answers.\n\
+    "<span>\n\nQuick message from creator: Looking to make some easy money online? Click on the following link to get started!\n\
+    <a href=\"https://www.swagbucks.com/p/register?rb=127459126\" target=\"_blank\" rel=\"noopener noreferrer\">https://www.SwagBucks.com/</a></span>",
+
+    "<span>\n\nQuick message from creator: Looking to make some easy money online? Click on the following link to get started!\n\
+    <a href=\"https://www.prizerebel.com/index.php?r=13177620\" target=\"_blank\" rel=\"noopener noreferrer\">https://www.PrizeRebel.com/</a></span>",
+
+    "<span>\n\nMessage from the creator: Looking for more meaning in life? Check this out for answers.\n\
     <a href=\"https://www.comeuntochrist.org/\" target=\"_blank\" rel=\"noopener noreferrer\">https://www.ComeUntoChrist.org/</a></span>"
   ];
-  
+
   const textColor = getComputedStyle(document.body).getPropertyValue("--yt-live-chat-primary-text-color");
 
   // CLEAR CACHES FOR NEW PAGE LOAD
@@ -78,48 +77,50 @@ const script = (function (paid=false) {
   new MutationObserver(() => {
     if (location.href !== currentUrl) {
       currentUrl = location.href;
-      commentsLoaded = false;
-      commentQueue.reset();
-      for (let key in commentArchive) delete commentArchive[key];
-      // keep botArchive: these comments have been seen 3 or more times.
-      // grabCommentsContainer();
+      // Critical so blocked comments don't spill over to other videos
+      if (currentUrl.includes("watch?v=")) {
+        window.location.reload();
+        setupCommentsContainerMO();
+      }
     }
-  }).observe(document.head, {childList: true, subtree: true});
+  }).observe(document, { childList: true, subtree: true });
 
   let commentsLoaded = false;
   let commentQueue = new LinkedList;
   let commentArchive = new Object;
   let botArchive = new Set;
-  
-  // Set up main mutation observer after comments div has loaded in background 
 
-  setTimeout(() => {
-    new MutationObserver((mutations) => {
-      try {
-        mutations.forEach((mutation) => {
-          mutation.addedNodes.forEach((node) => {
-            // Search channels titles in replies
-            if (node.id === "body") {
-              parseChannelName(node.children[1].firstElementChild.lastElementChild.firstElementChild.firstElementChild.firstElementChild);
-            }
-            // All else
-            else if ((node.tagName === "YTD-COMMENT-THREAD-RENDERER"
-            && node.classList.contains("ytd-item-section-renderer"))
-            // Comments will pop up in a node with this id
-            || node.id === "content-text") {
-              findBotComments(node);
-              // Set up event listeners
-              if (!commentsLoaded) {
-                setupCommentSettingELs();
+  // Set up main mutation observer after comments div has loaded in background 
+  const setupCommentsContainerMO = () => {
+    setTimeout(() => {
+      new MutationObserver((mutations) => {
+        try {
+          mutations.forEach((mutation) => {
+            mutation.addedNodes.forEach((node) => {
+              // Search channels titles in replies
+              if (node.id === "body") {
+                parseChannelName(node.children[1].firstElementChild.lastElementChild.firstElementChild.firstElementChild.firstElementChild);
               }
-            }
+              // All else
+              else if ((node.tagName === "YTD-COMMENT-THREAD-RENDERER"
+                && node.classList.contains("ytd-item-section-renderer"))
+                // Comments will pop up in a node with this id
+                || node.id === "content-text") {
+                findBotComments(node);
+                // Set up event listeners
+                if (!commentsLoaded) {
+                  setupCommentSettingELs();
+                }
+              }
+            });
           });
-        });
-      } catch (e) {
-        console.log("Is this error preventing something?", e);
-      }
-    }).observe(document.getElementById("comments"), {subtree: true, childList: true});
-  }, 750);
+        } catch (e) {}
+      }).observe(document.getElementById("comments"), { subtree: true, childList: true });
+    }, 750);
+  };
+
+  if (currentUrl.includes("watch?v="))
+    setupCommentsContainerMO();
 
   // Step 1 helper functions
   const setupCommentSettingELs = () => {
@@ -139,7 +140,6 @@ const script = (function (paid=false) {
   };
 
   // Observe for new comments loaded
-
   const findBotComments = (node) => {
     // Comment content
     if (node.id === "content-text") {
@@ -150,9 +150,9 @@ const script = (function (paid=false) {
           if (child.nodeType === Node.ELEMENT_NODE) {
             if (child.tagName === "A") {
               // Remove any comments with links (unless it's a response, hashtag, or a time stamp)
-              if (!(child.textContent.includes("@") 
-              || child.textContent.includes("#") 
-              || /([0-9]:[0-9])/.test(child.textContent))) {
+              if (!(child.textContent.includes("@")
+                || child.textContent.includes("#")
+                || /([0-9]:[0-9])/.test(child.textContent))) {
                 containsMaliciousAnchorTag = true;
                 break;
               }
@@ -182,7 +182,7 @@ const script = (function (paid=false) {
     }
     else if (node.hasChildNodes()) {
       node.childNodes.forEach(findBotComments); // Dig deeper in the DOM
-    } 
+    }
     else if (node.nodeType === Text.TEXT_NODE) {
       parseMainSectionChannelNames(node);
     }
@@ -202,27 +202,28 @@ const script = (function (paid=false) {
 
   const parseChannelName = (channelNameContainer) => {
     let channelName = channelNameContainer.textContent.toLowerCase();
-    // console.log("Channel Name", channelName); // USEFUL
     if (channelName.includes("channe")
-    || channelName.includes("subs")
-    || channelName.includes("touch")
-    || channelName.includes("profile")
-    || channelName.includes("vlog")
-    || channelName.includes("check")
-    || channelName.includes("ck me")
-    || channelName.includes("sex")
-    || channelName.includes("s]ex")
-    || channelName.includes("text")
-    || channelName.includes("🔞")
-    || channelName.includes("🍆")
-    || channelName.includes("🔥")
-    || channelName.includes("👈")
-    || channelName.includes("👉")
-    || channelName.includes("telegram")
-    || channelName.includes("tsapp")
-    || channelName.includes("@")
-    || channelName.includes("①")
-    || channelName.includes("𝟙")) { 
+      || channelName.includes("subs")
+      || channelName.includes("0 video")
+      || channelName.includes("touch")
+      || channelName.includes("profile")
+      || channelName.includes("vlog")
+      || channelName.includes("!ve")
+      || channelName.includes("check")
+      || channelName.includes("ck me")
+      || channelName.includes("sex")
+      || channelName.includes("s]ex")
+      || channelName.includes("text")
+      || channelName.includes("🔞")
+      || channelName.includes("🍆")
+      || channelName.includes("🔥")
+      || channelName.includes("👈")
+      || channelName.includes("👉")
+      || channelName.includes("telegram")
+      || channelName.includes("tsapp")
+      || channelName.includes("@")
+      || channelName.includes("①")
+      || channelName.includes("𝟙")) {
       // x6 for channel names
       console.log("🚨[DETECTION]channel name was flagged", channelName);
       modifyContanimatedContainer(channelNameContainer.parentElement.parentElement.parentElement.parentElement.parentElement.parentElement, "Bot");
@@ -239,15 +240,13 @@ const script = (function (paid=false) {
           break; // Don't clog with comments of massive size
         }
         child.tagName === "IMG"
-        ? wholeComment += child.alt
-        : wholeComment += child.innerText.slice(0,50);
+          ? wholeComment += child.alt
+          : wholeComment += child.innerText;
         childrenCount++;
       }
 
       let commentContainer = textNode.parentElement.parentElement.parentElement.parentElement.parentElement;
-      
-      // console.log("Comment:", wholeComment); // Useful
-      
+
       // Put common bot sayings here
       if (wholeComment.includes("Can we all just appreciate the")) {
         console.log("🚨TYPICAL BOT COMMENT", wholeComment);
@@ -255,36 +254,29 @@ const script = (function (paid=false) {
       } else if (commentArchive[wholeComment]) {
         console.log("🚨COMMENT NOT UNIQUE", wholeComment);
         if (!botArchive.has(wholeComment)) {
-          commentArchive[wholeComment].length >= 2
-          // Third sighting; add to botArchive
-          ? botArchive.add(wholeComment) 
-          // Second sighting; delete first occurence as well.
-          : (modifyContanimatedContainer(commentArchive[wholeComment][0], "Repetitive"), 
-          commentArchive[wholeComment].push("x2"));
+          botArchive.add(wholeComment);
+          modifyContanimatedContainer(commentArchive[wholeComment], "Repetitive");
         }
         modifyContanimatedContainer(commentContainer, "Repetitive");
       } else if (botArchive.has(wholeComment)) {
         console.log("🚨🚨🚨SEEN MORE THAN 2X", wholeComment);
         modifyContanimatedContainer(commentContainer, "Repetitive");
       } else {
-        commentArchive[wholeComment] = [commentContainer];
+        commentArchive[wholeComment] = commentContainer;
         let oldComment = commentQueue.addNode(wholeComment);
         if (oldComment)
           delete commentArchive[oldComment];
       }
-    } catch (error) {
-      console.log("MY ERROR", error);
-    }
+    } catch (error) {}
   };
 
   // Step 4: Replace the whole comment container
   const modifyContanimatedContainer = (container, commentType) => {
     let parentElement;
     container.parentElement.id === "contents"
-    ? parentElement = container
-    : parentElement = container.parentElement;
+      ? parentElement = container
+      : parentElement = container.parentElement;
     // let parentElement = container[0];
-    console.log("Trying to purify this container", parentElement, "for", container);
     try {
       while (parentElement.firstElementChild !== null) {
         parentElement.removeChild(parentElement.firstElementChild);
@@ -294,10 +286,10 @@ const script = (function (paid=false) {
       let botCommentDiv = document.createElement("span");
       let message = `[${commentType} comment removed]`;
       if (paid) {
-        if (Math.random() < 0.005) {
+        if (Math.random() > 0.999) {
           message += promotions[Math.floor(Math.random() * 2)];
         }
-        else if (Math.random() < 0.0001) {
+        else if (Math.random() > 0.9999) {
           message += promotions[2];
         }
       }
@@ -305,7 +297,7 @@ const script = (function (paid=false) {
       botCommentDiv.style = `color: ${textColor}; font-size: 14px; font-style: italic;`;
       parentElement.appendChild(botCommentDiv);
     }
-  }
+  };
 });
 
 chrome.storage.sync.get(["authenticated"], function(result) {

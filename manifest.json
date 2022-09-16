@@ -11,7 +11,7 @@
   },
   "content_scripts": [
     {
-      "matches": ["https://www.youtube.com/watch?v=*"],
+      "matches": ["https://www.youtube.com/*"],
       "js": ["h4g98hniwurgb094j.js"]
     },
     {
