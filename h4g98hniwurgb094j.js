@@ -47,7 +47,7 @@ const script = (function (paid=false) {
         let origTail = this.tail;
         this.tail = newNode;
         origTail.next = newNode;
-        if (this.size > 99) {
+        if (this.size > 199) {
           let origHead = this.head;
           this.head = this.head.next;
           return origHead;
@@ -59,11 +59,44 @@ const script = (function (paid=false) {
     }
   }
 
+  const typicallyFlaggedChannelNamePatterns = [
+    "channe",
+    "subs",
+    "0 video",
+    "touch",
+    "profile",
+    "tap ",
+    "vlog",
+    "!ve",
+    "check",
+    "ck me",
+    "sex",
+    "s]e",
+    "hot",
+    "text",
+    "🔞",
+    "🍆",
+    "🔥",
+    "👈",
+    "👉",
+    "telegram",
+    "tsapp",
+    "@",
+    "①",
+    "𝟙",
+    "nora smith"
+  ];
+
+  const typicallyFlaggedComments = [
+    "Can we all just appreciate the",
+    "nigg"
+  ];
+
   const promotions = [
-    "<span>\n\nQuick message from creator: Looking to make some easy money online? Click on the following link to get started!\n\
+    "<span>\n\nQuick message from the creator: Looking to make some easy money online? Click on the following link to get started!\n\
     <a href=\"https://www.swagbucks.com/p/register?rb=127459126\" target=\"_blank\" rel=\"noopener noreferrer\">https://www.SwagBucks.com/</a></span>",
 
-    "<span>\n\nQuick message from creator: Looking to make some easy money online? Click on the following link to get started!\n\
+    "<span>\n\nQuick message from the creator: Looking to make some easy money online? Click on the following link to get started!\n\
     <a href=\"https://www.prizerebel.com/index.php?r=13177620\" target=\"_blank\" rel=\"noopener noreferrer\">https://www.PrizeRebel.com/</a></span>",
 
     "<span>\n\nMessage from the creator: Looking for more meaning in life? Check this out for answers.\n\
@@ -73,17 +106,31 @@ const script = (function (paid=false) {
   const textColor = getComputedStyle(document.body).getPropertyValue("--yt-live-chat-primary-text-color");
 
   // CLEAR CACHES FOR NEW PAGE LOAD
+  let currentVideoId;
+  try {
+    currentVideoId = location.href.split("?v=")[1].split("&")[0];
+  } catch (e) {
+    currentVideoId = null;
+  }
+
   let currentUrl = location.href;
   new MutationObserver(() => {
     if (location.href !== currentUrl) {
+      // If the user goes from one video to the home and decides to go back to same vid
       currentUrl = location.href;
-      // Critical so blocked comments don't spill over to other videos
-      if (currentUrl.includes("watch?v=")) {
-        window.location.reload();
-        setupCommentsContainerMO();
-      }
+      commentArchive = new Object;
+      commentQueue.reset();
+      // Critical to reload window so corpses of blocked comments from previous 
+      // videos don't spill over to other videos
+      // Go by video id since playlists will change the index right after changing the url
+      // So we want to avoid that infinite refresh state
+      try {
+        if (location.href.split("?v=")[1].split("&")[0] !== currentVideoId) {
+          window.location.reload();
+        }
+      } catch (e) {}
     }
-  }).observe(document, { childList: true, subtree: true });
+  }).observe(document, {childList: true, subtree: true});
 
   let commentsLoaded = false;
   let commentQueue = new LinkedList;
@@ -115,28 +162,32 @@ const script = (function (paid=false) {
             });
           });
         } catch (e) {}
-      }).observe(document.getElementById("comments"), { subtree: true, childList: true });
-    }, 750);
+      }).observe(document.getElementById("comments"), {subtree: true, childList: true});
+    }, 1000);
   };
-
-  if (currentUrl.includes("watch?v="))
+ 
+  // Reload point of entry
+  if (currentVideoId)
+    console.log("resetting all with video id", currentVideoId);
     setupCommentsContainerMO();
 
   // Step 1 helper functions
   const setupCommentSettingELs = () => {
     commentsLoaded = true;
-    let dropdowns = document.getElementsByClassName("dropdown-content");
-    let commentDropdown = dropdowns[dropdowns.length-1];
-    commentDropdown.children[0].addEventListener("click", commentSettingEvList);
-    commentDropdown.children[1].addEventListener("click", commentSettingEvList);
+    document.addEventListener("click", commentSettingEvList)
   };
-  const commentSettingEvList = () => {
-    let parent = document.getElementById("comments").lastElementChild.children[2];
-    while (parent.hasChildNodes()) {
-      parent.removeChild(parent.firstChild);
+
+  const commentSettingEvList = (e) => {
+    let innerText = e.target.innerText;
+    if (innerText === "Newest first" || innerText === "Top comments") {
+      // This is so the first batch of comments can be detected
+      let parent = document.getElementById("comments").lastElementChild.children[2];
+      while (parent.hasChildNodes()) {
+        parent.removeChild(parent.firstChild);
+      }
+      commentQueue.reset();
+      commentArchive = new Object;
     }
-    commentQueue.reset();
-    commentArchive = new Object;
   };
 
   // Observe for new comments loaded
@@ -200,33 +251,46 @@ const script = (function (paid=false) {
     } catch (e) {}
   };
 
+  const specialCharParser = {
+    "а":"a",
+    "ɑ":"a",
+    "с":"c",
+    "ɛ":"e",
+    "е":"e",
+    "ᴇ":"e",
+    "к":"k",
+    "м":"m",
+    "ɴ":"n",
+    "т":"t",
+    "р":"p",
+    "ɡ":"g",
+    "ɢ":"g",
+  };
+
   const parseChannelName = (channelNameContainer) => {
     let channelName = channelNameContainer.textContent.toLowerCase();
-    if (channelName.includes("channe")
-      || channelName.includes("subs")
-      || channelName.includes("0 video")
-      || channelName.includes("touch")
-      || channelName.includes("profile")
-      || channelName.includes("vlog")
-      || channelName.includes("!ve")
-      || channelName.includes("check")
-      || channelName.includes("ck me")
-      || channelName.includes("sex")
-      || channelName.includes("s]ex")
-      || channelName.includes("text")
-      || channelName.includes("🔞")
-      || channelName.includes("🍆")
-      || channelName.includes("🔥")
-      || channelName.includes("👈")
-      || channelName.includes("👉")
-      || channelName.includes("telegram")
-      || channelName.includes("tsapp")
-      || channelName.includes("@")
-      || channelName.includes("①")
-      || channelName.includes("𝟙")) {
+    console.log(channelName); // useful!
+
+    // Check for the 55349 special char
+    if (channelName.includes(String.fromCharCode(55349))) {
+      console.log("🚨[DETECTION]Common special char found", channelName);
       // x6 for channel names
-      console.log("🚨[DETECTION]channel name was flagged", channelName);
       modifyContanimatedContainer(channelNameContainer.parentElement.parentElement.parentElement.parentElement.parentElement.parentElement, "Bot");
+      return;
+    }
+
+    for (let char in specialCharParser) {
+      let regex = new RegExp(char, "gi");
+      channelName = channelName.replace(regex, specialCharParser[char]);
+    }
+
+    for (let pattern of typicallyFlaggedChannelNamePatterns) {
+      if (channelName.includes(pattern)) {
+        console.log("🚨[DETECTION]channel name was flagged", channelName);
+        // x6 for channel names
+        modifyContanimatedContainer(channelNameContainer.parentElement.parentElement.parentElement.parentElement.parentElement.parentElement, "Bot");
+        break;
+      }
     }
   };
 
@@ -247,11 +311,23 @@ const script = (function (paid=false) {
 
       let commentContainer = textNode.parentElement.parentElement.parentElement.parentElement.parentElement;
 
+      for (let char in specialCharParser) {
+        let regex = new RegExp(char, "gi");
+        wholeComment = wholeComment.replace(regex, specialCharParser[char]);
+      }
+      
+      // console.log(wholeComment) // useful!
+
       // Put common bot sayings here
-      if (wholeComment.includes("Can we all just appreciate the")) {
-        console.log("🚨TYPICAL BOT COMMENT", wholeComment);
-        modifyContanimatedContainer(commentContainer, "Bot");
-      } else if (commentArchive[wholeComment]) {
+
+      for (let comment of typicallyFlaggedComments) {
+        if (wholeComment.includes(comment)) {
+          console.log("🚨TYPICAL BOT COMMENT", wholeComment);
+          modifyContanimatedContainer(commentContainer, "Bot");
+          return;
+        }
+      }
+      if (commentArchive[wholeComment]) {
         console.log("🚨COMMENT NOT UNIQUE", wholeComment);
         if (!botArchive.has(wholeComment)) {
           botArchive.add(wholeComment);
@@ -267,7 +343,7 @@ const script = (function (paid=false) {
         if (oldComment)
           delete commentArchive[oldComment];
       }
-    } catch (error) {}
+    } catch (e) {}
   };
 
   // Step 4: Replace the whole comment container
@@ -276,7 +352,6 @@ const script = (function (paid=false) {
     container.parentElement.id === "contents"
       ? parentElement = container
       : parentElement = container.parentElement;
-    // let parentElement = container[0];
     try {
       while (parentElement.firstElementChild !== null) {
         parentElement.removeChild(parentElement.firstElementChild);
@@ -286,7 +361,7 @@ const script = (function (paid=false) {
       let botCommentDiv = document.createElement("span");
       let message = `[${commentType} comment removed]`;
       if (paid) {
-        if (Math.random() > 0.999) {
+        if (Math.random() > 0.995) {
           message += promotions[Math.floor(Math.random() * 2)];
         }
         else if (Math.random() > 0.9999) {
@@ -294,7 +369,7 @@ const script = (function (paid=false) {
         }
       }
       botCommentDiv.innerHTML = message;
-      botCommentDiv.style = `color: ${textColor}; font-size: 14px; font-style: italic;`;
+      botCommentDiv.style = `color: ${textColor}; font-size: 14px; font-style: italic; font-weight: normal;`;
       parentElement.appendChild(botCommentDiv);
     }
   };
