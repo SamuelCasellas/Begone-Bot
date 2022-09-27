@@ -71,6 +71,7 @@ const script = (function (paid=false) {
     "check",
     "ck me",
     "sex",
+    "body",
     "s]e",
     "hot",
     "text",
@@ -84,7 +85,8 @@ const script = (function (paid=false) {
     "@",
     "①",
     "𝟙",
-    "nora smith"
+    "nora smith",
+    "ava adams"
   ];
 
   const typicallyFlaggedComments = [
@@ -94,10 +96,10 @@ const script = (function (paid=false) {
 
   const promotions = [
     "<span>\n\nQuick message from the creator: Looking to make some easy money online? Click on the following link to get started!\n\
-    <a href=\"https://www.swagbucks.com/p/register?rb=127459126\" target=\"_blank\" rel=\"noopener noreferrer\">https://www.SwagBucks.com/</a></span>",
+    <a href=\"https://www.swagbucks.com/p/register?rb=127459126\" target=\"_blank\" rel=\"noopener noreferrer\">https://www.swagbucks.com/p/register?rb=127459126</a></span>",
 
     "<span>\n\nQuick message from the creator: Looking to make some easy money online? Click on the following link to get started!\n\
-    <a href=\"https://www.prizerebel.com/index.php?r=13177620\" target=\"_blank\" rel=\"noopener noreferrer\">https://www.PrizeRebel.com/</a></span>",
+    <a href=\"https://www.prizerebel.com/index.php?r=13177620\" target=\"_blank\" rel=\"noopener noreferrer\">https://www.prizerebel.com/index.php?r=13177620</a></span>",
 
     "<span>\n\nMessage from the creator: Looking for more meaning in life? Check this out for answers.\n\
     <a href=\"https://www.comeuntochrist.org/\" target=\"_blank\" rel=\"noopener noreferrer\">https://www.ComeUntoChrist.org/</a></span>"
