@@ -66,6 +66,7 @@ const script = (function (paid=false) {
     "touch",
     "profile",
     "tap ",
+    "a]p",
     "vlog",
     "!ve",
     "check",
@@ -218,13 +219,13 @@ const script = (function (paid=false) {
             if (window.getComputedStyle(node.parentElement.parentElement.parentElement.previousElementSibling.firstElementChild).display === "none") {
               // x7 for complex comments
               console.log("🚨(DETECTION)Detected as a comment unpinned with malicious anchor", node);
-              modifyContanimatedContainer(node.parentElement.parentElement.parentElement.parentElement.parentElement.parentElement, "Bot");
+              modifyContanimatedContainer(node.parentElement.parentElement.parentElement.parentElement.parentElement.parentElement, "Bot comment removed");
             } else {
               console.log("Pinned comment, safe", node);
             }
           } catch (e) {
             console.log("🚨[COULD NOT DETECT IF PINNED] Detected as a comment unpinned with malicious anchor", node);
-            modifyContanimatedContainer(node.parentElement.parentElement.parentElement.parentElement.parentElement.parentElement, "Bot");
+            modifyContanimatedContainer(node.parentElement.parentElement.parentElement.parentElement.parentElement.parentElement, "Bot comment removed");
           }
         } else {
           archiveComment(node);
@@ -248,6 +249,8 @@ const script = (function (paid=false) {
         // id="name" === VERIFIED
         if (textNode.parentElement.id === "author-text") {
           parseChannelName(textNode.nextElementSibling);
+        } else if (textNode.parentElement.id === "name") {
+          console.log(textNode.parentElement.getAttribute("href"), "Verified channel link")
         }
       }
     } catch (e) {}
@@ -271,13 +274,13 @@ const script = (function (paid=false) {
 
   const parseChannelName = (channelNameContainer) => {
     let channelName = channelNameContainer.textContent.toLowerCase();
-    console.log(channelName); // useful!
+    // console.log(channelName); // useful!
 
     // Check for the 55349 special char
     if (channelName.includes(String.fromCharCode(55349))) {
       console.log("🚨[DETECTION]Common special char found", channelName);
       // x6 for channel names
-      modifyContanimatedContainer(channelNameContainer.parentElement.parentElement.parentElement.parentElement.parentElement.parentElement, "Bot");
+      modifyContanimatedContainer(channelNameContainer.parentElement.parentElement.parentElement.parentElement.parentElement.parentElement, "Bot comment removed");
       return;
     }
 
@@ -290,7 +293,7 @@ const script = (function (paid=false) {
       if (channelName.includes(pattern)) {
         console.log("🚨[DETECTION]channel name was flagged", channelName);
         // x6 for channel names
-        modifyContanimatedContainer(channelNameContainer.parentElement.parentElement.parentElement.parentElement.parentElement.parentElement, "Bot");
+        modifyContanimatedContainer(channelNameContainer.parentElement.parentElement.parentElement.parentElement.parentElement.parentElement, "Bot comment removed");
         break;
       }
     }
@@ -325,7 +328,7 @@ const script = (function (paid=false) {
       for (let comment of typicallyFlaggedComments) {
         if (wholeComment.includes(comment)) {
           console.log("🚨TYPICAL BOT COMMENT", wholeComment);
-          modifyContanimatedContainer(commentContainer, "Bot");
+          modifyContanimatedContainer(commentContainer, "Bot comment removed");
           return;
         }
       }
@@ -333,17 +336,26 @@ const script = (function (paid=false) {
         console.log("🚨COMMENT NOT UNIQUE", wholeComment);
         if (!botArchive.has(wholeComment)) {
           botArchive.add(wholeComment);
-          modifyContanimatedContainer(commentArchive[wholeComment], "Repetitive");
+          modifyContanimatedContainer(commentArchive[wholeComment], "Repetitive comment removed");
         }
-        modifyContanimatedContainer(commentContainer, "Repetitive");
+        modifyContanimatedContainer(commentContainer, "Repetitive comment removed");
       } else if (botArchive.has(wholeComment)) {
         console.log("🚨🚨🚨SEEN MORE THAN 2X", wholeComment);
-        modifyContanimatedContainer(commentContainer, "Repetitive");
+        modifyContanimatedContainer(commentContainer, "Repetitive comment removed");
       } else {
         commentArchive[wholeComment] = commentContainer;
         let oldComment = commentQueue.addNode(wholeComment);
         if (oldComment)
           delete commentArchive[oldComment];
+        
+        let hideButton = document.createElement("button");
+        hideButton.setAttribute("type", "button");
+        hideButton.innerText = "Hide comment";
+        commentContainer.lastElementChild.appendChild(hideButton);
+        hideButton.addEventListener("click", () => {
+          modifyContanimatedContainer(commentContainer, "Comment hidden");
+        })
+        // THE TEXT NODE CONTAINS THE WHOLE THING. TRY WITH THIS
       }
     } catch (e) {}
   };
@@ -361,7 +373,7 @@ const script = (function (paid=false) {
     } catch (e) {}
     finally {
       let botCommentDiv = document.createElement("span");
-      let message = `[${commentType} comment removed]`;
+      let message = `[${commentType}]`;
       if (paid) {
         if (Math.random() > 0.995) {
           message += promotions[Math.floor(Math.random() * 2)];
